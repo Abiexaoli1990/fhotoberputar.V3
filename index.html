@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Rotating Image Gallery (Geser Sentuh Responsif)</title>
+    <title>3D Rotating Image Gallery (Zoom 20% pada Klik)</title>
     <style>
-        /* CSS Umum (Tidak Berubah) */
+        /* CSS Umum */
         * {
             padding: 0;
             margin: 0;
@@ -36,7 +36,7 @@
             max-width: 90vw; 
             transition: transform 0.1s linear; 
             z-index: 10; 
-            cursor: grab; 
+            cursor: grab; /* Cursor untuk area geser umum */
         }
         
         .box:active {
@@ -73,16 +73,18 @@
             left: 0;
             width: 100%;
             height: 100%;
-            transition: 0.5s ease;
+            transition: 0.2s ease-in-out; /* Transisi untuk zoom */
             border-radius: 15px;
             object-fit: cover; 
             border: 4px solid transparent;
             border-image: linear-gradient(to right, red, blue, green) 1;
             animation: gradientShadow 3s infinite alternate; 
             touch-action: pan-y; 
-            pointer-events: none; 
+            /* ✨ PENTING: Hapus pointer-events: none; agar gambar bisa diklik/disentuh */
+            cursor: pointer; /* Indikasi bahwa gambar bisa diklik */
         }
         
+        /* Efek Hover untuk mouse (tetap dipertahankan) */
         .box span img:hover,
         .box span img:focus-within {
             transform: scale(1.1) translateY(-2px);
@@ -90,7 +92,7 @@
             box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.8), 
                         0 0 50px 20px rgba(0, 255, 255, 0.7);
         }
-
+        
         /* Styling Tombol Bawah */
         .button-container {
             position: fixed;
@@ -171,7 +173,6 @@
     </div>
 
     <script>
-        // --- LOGIKA SLIDE TOUCH/MOUSE (GESER MANUAL & OTOMATIS) ---
         const gallery = document.getElementById('gallery-box');
         let startX;
         let currentRotation = 0;
@@ -179,11 +180,11 @@
         let animationInterval;
         let autoRotateInterval; 
         
-        // Sensitivitas Geser Manual (Disesuaikan)
         const sensitivity = 2.5; 
-        
-        // Kecepatan Putar Otomatis (Disesuaikan)
         const autoRotateSpeed = 0.4; 
+
+        let isDragging = false;
+        let activeImage = null; // Menyimpan referensi gambar yang sedang di-zoom/interaksi
 
         function startAutoRotate() {
             if (autoRotateInterval) clearInterval(autoRotateInterval);
@@ -204,7 +205,6 @@
 
             animationInterval = setInterval(() => {
                 currentRotation += velocity;
-                // ✨ KECEPATAN FRICTION: Sedikit dikurangi untuk inersia yang lebih panjang
                 velocity *= 0.94; 
 
                 if (Math.abs(velocity) < 0.1) {
@@ -220,65 +220,183 @@
             gallery.style.transform = `perspective(1000px) rotateY(${currentRotation}deg)`;
         }
 
-        // --- Event Listeners untuk Sentuhan (Touch) ---
-        
+        // --- FUNGSI ZOOM BARU ---
+        function applyZoom(imgElement) {
+            if (activeImage && activeImage !== imgElement) {
+                resetZoom(activeImage); // Reset zoom pada gambar sebelumnya jika ada
+            }
+            activeImage = imgElement;
+            imgElement.style.transform = 'scale(1.2) translateY(-5px)'; // Zoom 20%
+            imgElement.style.boxShadow = '0 0 50px 15px rgba(255, 255, 255, 1)'; // Efek glow
+            // Atur z-index tinggi pada elemen span induk untuk memastikan gambar muncul di atas
+            imgElement.closest('span').style.zIndex = '999'; 
+        }
+
+        function resetZoom(imgElement) {
+            imgElement.style.transform = ''; // Kembalikan ke normal
+            imgElement.style.boxShadow = '';
+            imgElement.closest('span').style.zIndex = ''; // Kembalikan z-index default
+            activeImage = null;
+        }
+
+        // --- Event Listeners untuk Gambar Individu (untuk ZOOM) ---
+        document.querySelectorAll('.box span img').forEach(img => {
+            let touchStartTime = 0; // Untuk membedakan tap dari drag
+            const TAP_THRESHOLD = 200; // ms
+
+            img.addEventListener('touchstart', (e) => {
+                e.stopPropagation(); // Hentikan event agar tidak memicu event gallery.
+                touchStartTime = new Date().getTime();
+                isDragging = false; // Reset drag flag untuk gambar ini
+
+                pauseRotation(); // Berhenti berputar saat ada interaksi
+
+                // Terapkan zoom langsung
+                applyZoom(e.target);
+
+                startX = e.touches[0].clientX; // Untuk mendeteksi apakah akan ada drag
+                velocity = 0; // Reset velocity
+            }, { passive: false });
+
+            img.addEventListener('touchmove', (e) => {
+                // Jika ada gerakan saat gambar di-zoom, ini berarti user ingin geser galeri
+                if (activeImage === e.target) {
+                    const currentTime = new Date().getTime();
+                    if (currentTime - touchStartTime > TAP_THRESHOLD) { // Jika sudah disentuh lebih dari threshold
+                        // Jika ada gerakan yang cukup, batalkan zoom dan mulai drag
+                        const currentX = e.touches[0].clientX;
+                        const deltaX = Math.abs(currentX - startX);
+                        if (deltaX > 10) { // Toleransi kecil untuk gerakan tidak disengaja
+                            isDragging = true;
+                            resetZoom(e.target); // Batalkan zoom
+                            // Lanjutkan logika geser gallery
+                            const rotationDelta = (currentX - startX) * sensitivity;
+                            currentRotation += rotationDelta;
+                            velocity = rotationDelta * 0.5;
+                            updateRotation();
+                            startX = currentX;
+                        }
+                    }
+                }
+                e.preventDefault(); // Mencegah scrolling default
+            }, { passive: false });
+
+            img.addEventListener('touchend', (e) => {
+                const currentTime = new Date().getTime();
+                if (!isDragging && (currentTime - touchStartTime <= TAP_THRESHOLD)) {
+                    // Ini adalah tap singkat pada gambar, biarkan zoom tetap sebentar lalu reset
+                    // Tidak perlu reset di sini, karena reset dilakukan saat gambar lain di-zoom atau startAutoRotate.
+                    // Jika ini hanya tap singkat, user mungkin ingin melihat detail, jadi biarkan zoom sampai ada interaksi lain.
+                } else {
+                    // Ini adalah drag atau tap panjang, reset zoom
+                    if (activeImage === e.target) {
+                        resetZoom(e.target);
+                    }
+                }
+                startX = undefined;
+                startInertia(); // Mulai kembali inersia dan auto-rotate
+            }, false);
+
+            // --- Event Listeners untuk Mouse Individu (untuk ZOOM) ---
+            img.addEventListener('mousedown', (e) => {
+                e.stopPropagation(); // Hentikan event agar tidak memicu event gallery.
+                isDragging = false; 
+                pauseRotation(); 
+                applyZoom(e.target);
+                startX = e.clientX; 
+                velocity = 0;
+                e.preventDefault(); 
+            });
+
+            img.addEventListener('mouseup', (e) => {
+                if (!isDragging) {
+                    // Ini adalah klik singkat pada gambar. Biarkan zoom sampai ada interaksi lain.
+                } else {
+                    if (activeImage === e.target) {
+                        resetZoom(e.target);
+                    }
+                }
+                startX = undefined;
+                startInertia();
+            });
+            
+            // Mousemove di dokumen, tapi kita perlu membedakan jika mousemove ini adalah bagian dari drag gambar
+            // Ini akan ditangani oleh event mousemove global di 'document'
+        });
+
+
+        // --- Event Listeners untuk Geser Galeri (Ketika TIDAK mengklik gambar individu) ---
+        // Ini akan berfungsi jika user menyeret bagian yang bukan gambar (misalnya, background)
         gallery.addEventListener('touchstart', (e) => {
+            // Jika ada gambar yang sedang di-zoom, batalkan zoom-nya
+            if (activeImage) {
+                resetZoom(activeImage);
+            }
             pauseRotation(); 
             startX = e.touches[0].clientX;
             velocity = 0; 
+            isDragging = false; 
             e.preventDefault(); 
         }, { passive: false });
 
         gallery.addEventListener('touchmove', (e) => {
             if (startX === undefined) return;
+            isDragging = true; 
+            
             const currentX = e.touches[0].clientX;
             const deltaX = currentX - startX;
             
-            // ✨ Rotasi langsung mengikuti deltaX (gerakan jari)
             const rotationDelta = deltaX * sensitivity;
             currentRotation += rotationDelta;
-
-            // Update velocity berdasarkan gerakan agar inersia terasa
             velocity = rotationDelta * 0.5;
 
             updateRotation();
-            startX = currentX; // Set posisi start baru agar gerakan berikutnya relatif
+            startX = currentX;
             e.preventDefault(); 
         }, { passive: false });
 
         gallery.addEventListener('touchend', () => {
             startX = undefined;
             startInertia();
+            isDragging = false;
         }, false);
 
-        // --- Event Listeners untuk Mouse Drag ---
-        
+        // --- Event Listeners untuk Mouse Drag pada Area KOSONG ---
         gallery.addEventListener('mousedown', (e) => {
-            pauseRotation(); 
-            startX = e.clientX;
-            velocity = 0;
-            e.preventDefault(); 
+            // Jika target bukan img (misal, background gallery), maka ini adalah drag gallery
+            if (e.target.tagName !== 'IMG') {
+                if (activeImage) {
+                    resetZoom(activeImage);
+                }
+                pauseRotation(); 
+                startX = e.clientX;
+                velocity = 0;
+                isDragging = false; 
+                e.preventDefault(); 
+            }
         });
 
         document.addEventListener('mousemove', (e) => {
             if (startX === undefined) return; 
-            const currentX = e.clientX;
-            const deltaX = currentX - startX;
-            
-            // Rotasi langsung mengikuti deltaX (gerakan mouse)
-            const rotationDelta = deltaX * sensitivity;
-            currentRotation += rotationDelta;
-            velocity = rotationDelta * 0.5;
-
-            updateRotation();
-            startX = currentX; // Set posisi start baru
+            if (e.buttons === 1) { // Hanya drag jika tombol kiri mouse ditekan
+                isDragging = true;
+                const currentX = e.clientX;
+                const deltaX = currentX - startX;
+                const rotationDelta = deltaX * sensitivity;
+                currentRotation += rotationDelta;
+                velocity = rotationDelta * 0.5;
+                updateRotation();
+                startX = currentX;
+            }
         });
 
         document.addEventListener('mouseup', () => {
-            if (startX !== undefined) {
-                 startX = undefined;
-                 startInertia();
+            if (startX !== undefined && !isDragging) {
+                // Ini adalah klik pada area kosong, tidak melakukan apa-apa selain reset startX
             }
+            startX = undefined;
+            startInertia();
+            isDragging = false;
         });
 
         // MULAI ROTASI OTOMATIS SAAT HALAMAN DIMUAT
