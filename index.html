@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Rotating Image Gallery (Kecepatan Disempurnakan)</title>
+    <style>
+        /* CSS Umum */
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(150deg, rgb(214, 240, 68), rgb(47, 147, 218));
+            flex-direction: column; 
+            padding-top: 20px;
+            padding-bottom: 80px;
+            overflow: hidden; 
+            user-select: none; 
+            -webkit-user-select: none;
+            -moz-user-select: none;
+        }
+
+        .box {
+            position: relative;
+            width: 200px;
+            height: 300px; 
+            transform-style: preserve-3d;
+            max-width: 90vw; 
+            transition: transform 0.1s linear; 
+            z-index: 10; 
+            cursor: grab; 
+        }
+        
+        .box:active {
+            cursor: grabbing;
+        }
+
+        .box.paused {
+            transition: none;
+        }
+
+        @keyframes gradientShadow {
+            0% { box-shadow: 0 0 15px 5px rgba(255, 0, 0, 0.7); }
+            33% { box-shadow: 0 0 15px 5px rgba(0, 255, 0, 0.7); }
+            66% { box-shadow: 0 0 15px 5px rgba(0, 0, 255, 0.7); }
+            100% { box-shadow: 0 0 15px 5px rgba(255, 0, 0, 0.7); }
+        }
+
+        .box span {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform-origin: center;
+            transform-style: preserve-3d;
+            transform: rotateY(calc(var(--i) * 36deg)) translateZ(450px); 
+            -webkit-box-reflect: below 2px linear-gradient(transparent, transparent, rgba(4, 4, 4, 0.267));
+            z-index: 5; 
+        }
+
+        .box span img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: 0.5s ease;
+            border-radius: 15px;
+            object-fit: cover; 
+            border: 4px solid transparent;
+            border-image: linear-gradient(to right, red, blue, green) 1;
+            animation: gradientShadow 3s infinite alternate; 
+            touch-action: pan-y; 
+            pointer-events: none; 
+        }
+        
+        .box span img:hover,
+        .box span img:focus-within {
+            transform: scale(1.1) translateY(-2px);
+            animation-play-state: paused;
+            box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.8), 
+                        0 0 50px 20px rgba(0, 255, 255, 0.7);
+        }
+
+        /* Styling Tombol Bawah */
+        .button-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            box-sizing: border-box;
+            gap: 10px;
+        }
+
+        .nav-button-bottom {
+            flex-grow: 1;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 8px;
+            text-align: center;
+            font-family: sans-serif;
+            font-weight: bold;
+            transition: transform 0.3s, box-shadow 0.3s;
+            font-size: 0.9rem;
+            max-width: 150px;
+            background: linear-gradient(90deg, rgb(47, 147, 218), rgb(255, 0, 0));
+            color: #fff;
+            box-shadow: 0 0 15px 5px rgba(255, 0, 0, 0.5);
+        }
+
+        .nav-button-bottom:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(47, 147, 218, 1);
+        }
+
+        /* MEDIA QUERY: VERSI MOBILE */
+        @media screen and (max-width: 600px) {
+            .box {
+                width: 95px;
+                height: 200px;
+            }
+
+            .box span {
+                transform: rotateY(calc(var(--i) * 36deg)) translateZ(180px); 
+            }
+
+            .box span img {
+                border-radius: 5px;
+                border: 2px solid transparent; 
+                border-image: linear-gradient(to right, red, blue, green) 1;
+            }
+            
+            .nav-button-bottom {
+                font-size: 0.75rem; 
+                max-width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="box" id="gallery-box">
+        <span style="--i:1"><img src="https://png.pngtree.com/background/20250109/original/pngtree-cartoon-kids-walking-wallpaper-picture-image_15160714.jpg" alt="Gallery Image 1" tabindex="0"></span>
+        <span style="--i:2"><img src="https://img.freepik.com/foto-gratis/karakter-kartun-3d_23-2151021986.jpg?semt=ais_hybrid&w=740&q=80" alt="Gallery Image 2" tabindex="0"></span>
+        <span style="--i:3"><img src="https://i.pinimg.com/474x/21/35/f0/2135f0dd652c5487bc129558e9d3dada.jpg" alt="Gallery Image 3" tabindex="0"></span>
+        <span style="--i:4"><img src="https://azimages.org/wp-content/uploads/2024/10/Cute-Cartoon-Boy-DP15.jpg" alt="Gallery Image 4" tabindex="0"></span>
+        <span style="--i:5"><img src="https://sadgirldp.com/wp-content/uploads/Cartoon-Boy-DP-Images.jpeg" alt="Gallery Image 5" tabindex="0"></span>
+        <span style="--i:6"><img src="https://azimages.org/wp-content/uploads/2024/10/Cute-Cartoon-Boy-DP17.jpg" alt="Gallery Image 6" tabindex="0"></span>
+        <span style="--i:7"><img src="https://azimages.org/wp-content/uploads/2024/10/Cute-Cartoon-Boy-DP16.jpg" alt="Gallery Image 7" tabindex="0"></span>
+        <span style="--i:8"><img src="https://mewingemoji.com/wp-content/uploads/2024/07/cute-cartoon-dp15-573x1024.jpg" alt="Gallery Image 8" tabindex="0"></span>
+        <span style="--i:9"><img src="https://mewingemoji.com/wp-content/uploads/2024/07/cute-cartoon-dp.jpg" alt="Gallery Image 9" tabindex="0"></span>
+        <span style="--i:10"><img src="https://photosdp.com/wp-content/uploads/2024/04/Cartoon-Girl-Dp-PhotosDp.Com_24.jpg" alt="Gallery Image 10" tabindex="0"></span>
+    </div>
+
+    <div class="button-container">
+        <a href="https://example.com" class="nav-button-bottom">TWITTER</a>
+        <a href="https://example.com" class="nav-button-bottom">TELEGRAM</a>
+        <a href="https://example.com" class="nav-button-bottom">FACEBOOK</a>
+    </div>
+
+    <script>
+        // --- LOGIKA SLIDE TOUCH/MOUSE (GESER MANUAL & OTOMATIS) ---
+        const gallery = document.getElementById('gallery-box');
+        let startX;
+        let currentRotation = 0;
+        let velocity = 0;
+        let animationInterval;
+        let autoRotateInterval; 
+
+        // ✨ PENYESUAIAN KECEPATAN MANUAL: Diperlambat dari 4.0 menjadi 2.5
+        const sensitivity = 2.5; 
+        
+        // ✨ PENYESUAIAN KECEPATAN OTOMATIS: Dinaikkan dari 0.3 menjadi 0.4
+        const autoRotateSpeed = 0.4; 
+
+        function startAutoRotate() {
+            if (autoRotateInterval) clearInterval(autoRotateInterval);
+            autoRotateInterval = setInterval(() => {
+                currentRotation += autoRotateSpeed;
+                updateRotation();
+            }, 50); 
+        }
+
+        function pauseRotation() {
+            if (autoRotateInterval) clearInterval(autoRotateInterval);
+            gallery.classList.add('paused');
+            if (animationInterval) clearInterval(animationInterval);
+        }
+
+        function startInertia() {
+            if (autoRotateInterval) clearInterval(autoRotateInterval); 
+
+            animationInterval = setInterval(() => {
+                currentRotation += velocity;
+                velocity *= 0.95; 
+
+                if (Math.abs(velocity) < 0.1) {
+                    clearInterval(animationInterval);
+                    gallery.classList.remove('paused'); 
+                    startAutoRotate(); 
+                }
+                updateRotation();
+            }, 10);
+        }
+
+        function updateRotation() {
+            gallery.style.transform = `perspective(1000px) rotateY(${currentRotation}deg)`;
+        }
+
+        // --- Event Listeners untuk Sentuhan (Touch) ---
+        
+        gallery.addEventListener('touchstart', (e) => {
+            pauseRotation(); 
+            startX = e.touches[0].clientX;
+            velocity = 0; 
+            e.preventDefault(); 
+        }, { passive: false });
+
+        gallery.addEventListener('touchmove', (e) => {
+            if (startX === undefined) return;
+            const currentX = e.touches[0].clientX;
+            const deltaX = currentX - startX;
+            
+            const rotationDelta = deltaX * sensitivity;
+            currentRotation += rotationDelta;
+
+            velocity = rotationDelta * 0.5;
+
+            updateRotation();
+            startX = currentX;
+            e.preventDefault(); 
+        }, { passive: false });
+
+        gallery.addEventListener('touchend', () => {
+            startX = undefined;
+            startInertia();
+        }, false);
+
+        // --- Event Listeners untuk Mouse Drag ---
+        
+        gallery.addEventListener('mousedown', (e) => {
+            pauseRotation(); 
+            startX = e.clientX;
+            velocity = 0;
+            e.preventDefault(); 
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (startX === undefined) return; 
+            const currentX = e.clientX;
+            const deltaX = currentX - startX;
+            const rotationDelta = deltaX * sensitivity;
+            currentRotation += rotationDelta;
+            velocity = rotationDelta * 0.5;
+            updateRotation();
+            startX = currentX;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (startX !== undefined) {
+                 startX = undefined;
+                 startInertia();
+            }
+        });
+
+        // MULAI ROTASI OTOMATIS SAAT HALAMAN DIMUAT
+        startAutoRotate();
+
+    </script>
+</body>
+</html>
