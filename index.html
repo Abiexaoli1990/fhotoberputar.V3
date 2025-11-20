@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Rotating Image Gallery (Kecepatan Disempurnakan)</title>
+    <title>3D Rotating Image Gallery (Geser Sentuh Responsif)</title>
     <style>
-        /* CSS Umum */
+        /* CSS Umum (Tidak Berubah) */
         * {
             padding: 0;
             margin: 0;
@@ -178,11 +178,11 @@
         let velocity = 0;
         let animationInterval;
         let autoRotateInterval; 
-
-        // ✨ PENYESUAIAN KECEPATAN MANUAL: Diperlambat dari 4.0 menjadi 2.5
+        
+        // Sensitivitas Geser Manual (Disesuaikan)
         const sensitivity = 2.5; 
         
-        // ✨ PENYESUAIAN KECEPATAN OTOMATIS: Dinaikkan dari 0.3 menjadi 0.4
+        // Kecepatan Putar Otomatis (Disesuaikan)
         const autoRotateSpeed = 0.4; 
 
         function startAutoRotate() {
@@ -204,7 +204,8 @@
 
             animationInterval = setInterval(() => {
                 currentRotation += velocity;
-                velocity *= 0.95; 
+                // ✨ KECEPATAN FRICTION: Sedikit dikurangi untuk inersia yang lebih panjang
+                velocity *= 0.94; 
 
                 if (Math.abs(velocity) < 0.1) {
                     clearInterval(animationInterval);
@@ -233,13 +234,15 @@
             const currentX = e.touches[0].clientX;
             const deltaX = currentX - startX;
             
+            // ✨ Rotasi langsung mengikuti deltaX (gerakan jari)
             const rotationDelta = deltaX * sensitivity;
             currentRotation += rotationDelta;
 
+            // Update velocity berdasarkan gerakan agar inersia terasa
             velocity = rotationDelta * 0.5;
 
             updateRotation();
-            startX = currentX;
+            startX = currentX; // Set posisi start baru agar gerakan berikutnya relatif
             e.preventDefault(); 
         }, { passive: false });
 
@@ -261,11 +264,14 @@
             if (startX === undefined) return; 
             const currentX = e.clientX;
             const deltaX = currentX - startX;
+            
+            // Rotasi langsung mengikuti deltaX (gerakan mouse)
             const rotationDelta = deltaX * sensitivity;
             currentRotation += rotationDelta;
             velocity = rotationDelta * 0.5;
+
             updateRotation();
-            startX = currentX;
+            startX = currentX; // Set posisi start baru
         });
 
         document.addEventListener('mouseup', () => {
